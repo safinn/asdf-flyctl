@@ -19,8 +19,20 @@ if [ -n "${GITHUB_API_TOKEN:-}" ]; then
 fi
 
 sort_versions() {
+  latest_version=$(
+    curl "https://api.fly.io/app/flyctl_releases/$(get_platform)/$(get_arch)/latest" |
+      grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+' |
+      sed 's/^v//'
+    );
+
   sed 'h; s/[+-]/./g; s/.p\([[:digit:]]\)/.z\1/; s/$/.z/; G; s/\n/ /' |
-    LC_ALL=C sort -t. -k 1,1 -k 2,2n -k 3,3n -k 4,4n -k 5,5n | awk '{print $2}'
+    LC_ALL=C sort -t. -k 1,1 -k 2,2n -k 3,3n -k 4,4n -k 5,5n |
+    awk -v latest="$latest_version" '{
+      print $2
+      if ($2 == latest) {
+        exit
+      }
+    }'
 }
 
 list_github_tags() {
